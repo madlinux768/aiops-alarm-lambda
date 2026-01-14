@@ -12,16 +12,16 @@ tagging = boto3.client('resourcegroupstaggingapi')
 
 def enrich_alarm_context(alarm_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Enrich alarm with recent metrics and resource tags.
+    Enrich alarm with resource tags for priority and service mapping.
     
     Args:
         alarm_data: Parsed alarm data
         
     Returns:
-        Enriched alarm data with metrics and tags
+        Enriched alarm data with priority and service name
     """
     # Get resource tags
-    tags = _get_alarm_tags(alarm_data['alarm_arn'])
+    tags = _get_alarm_tags(alarm_data['alarm_arn']) if alarm_data.get('alarm_arn') else {}
     
     # Check if webhook is enabled
     webhook_enabled = tags.get('DevOpsAgentEnabled', 'true').lower() == 'true'
@@ -32,21 +32,22 @@ def enrich_alarm_context(alarm_data: Dict[str, Any]) -> Dict[str, Any]:
     # Get service name (from tags or alarm name)
     service_name = tags.get('DevOpsAgentService', _extract_service_name(alarm_data))
     
-    # Get recent metric data
-    recent_metrics = _get_recent_metrics(alarm_data)
+    logger.info(f"Enriched: priority={priority}, service={service_name}, tags_found={len(tags)}")
     
     return {
         **alarm_data,
         'webhook_enabled': webhook_enabled,
         'priority': priority,
         'service_name': service_name,
-        'tags': tags,
-        'recent_metrics': recent_metrics
+        'tags': tags
     }
 
 
 def _get_alarm_tags(alarm_arn: str) -> Dict[str, str]:
     """Get tags for CloudWatch alarm."""
+    if not alarm_arn:
+        return {}
+    
     try:
         response = cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
         return {tag['Key']: tag['Value'] for tag in response.get('Tags', [])}
@@ -56,40 +57,8 @@ def _get_alarm_tags(alarm_arn: str) -> Dict[str, str]:
 
 
 def _get_recent_metrics(alarm_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Get recent metric data points."""
-    try:
-        end_time = datetime.utcnow()
-        start_time = end_time - timedelta(hours=1)
-        
-        response = cloudwatch.get_metric_statistics(
-            Namespace=alarm_data['namespace'],
-            MetricName=alarm_data['metric_name'],
-            Dimensions=[
-                {'Name': k, 'Value': v} 
-                for k, v in alarm_data['dimensions'].items()
-            ],
-            StartTime=start_time,
-            EndTime=end_time,
-            Period=alarm_data['period'],
-            Statistics=[alarm_data['statistic']]
-        )
-        
-        datapoints = sorted(
-            response.get('Datapoints', []),
-            key=lambda x: x['Timestamp'],
-            reverse=True
-        )[:10]
-        
-        return [
-            {
-                'timestamp': dp['Timestamp'].isoformat(),
-                'value': dp.get(alarm_data['statistic'], 0)
-            }
-            for dp in datapoints
-        ]
-    except Exception as e:
-        logger.warning(f"Failed to get recent metrics: {e}")
-        return []
+    """Get recent metric data points (removed - DevOps Agent will investigate metrics)."""
+    return []
 
 
 def _default_priority(alarm_data: Dict[str, Any]) -> str:

@@ -26,11 +26,16 @@ def send_webhook(alarm_data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Webhook response
     """
+    logger.info(f"Sending webhook for alarm: {alarm_data.get('alarm_name', 'unknown')}")
+    logger.info(f"Priority: {alarm_data.get('priority')}, Service: {alarm_data.get('service_name')}")
+    
     # Get webhook credentials
     credentials = _get_webhook_credentials()
     
     # Build payload
     payload = _build_payload(alarm_data)
+    
+    logger.info(f"Webhook payload: title='{payload['title']}', priority={payload['priority']}")
     
     # Generate HMAC signature
     timestamp = datetime.utcnow().isoformat() + 'Z'
@@ -53,7 +58,13 @@ def send_webhook(alarm_data: Dict[str, Any]) -> Dict[str, Any]:
             status_code = response.getcode()
             response_body = response.read().decode('utf-8')
             
-            logger.info(f"Webhook response: {status_code}")
+            # Try to extract investigation ID from response
+            try:
+                response_json = json.loads(response_body) if response_body else {}
+                investigation_id = response_json.get('id', 'N/A')
+                logger.info(f"✓ Webhook successful: HTTP {status_code} | Investigation ID: {investigation_id}")
+            except:
+                logger.info(f"✓ Webhook successful: HTTP {status_code} | Response: {response_body[:200]}")
             
             return {
                 'status_code': status_code,
@@ -84,13 +95,24 @@ def _get_webhook_credentials() -> Dict[str, str]:
 
 
 def _build_payload(alarm_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Build DevOps Agent webhook payload."""
-    # Format recent metrics for description
-    metrics_summary = ""
-    if alarm_data.get('recent_metrics'):
-        metrics_summary = "\n\nRecent metric values:\n"
-        for m in alarm_data['recent_metrics'][:5]:
-            metrics_summary += f"- {m['timestamp']}: {m['value']}\n"
+    """Build DevOps Agent webhook payload with essential context."""
+    
+    # Build comprehensive description with all context
+    description_parts = [
+        f"CloudWatch Alarm: {alarm_data['alarm_name']}",
+        f"AWS Account: {alarm_data['account_id']}",
+        f"Region: {alarm_data['region']}",
+        f"",
+        f"Metric: {alarm_data['namespace']}/{alarm_data['metric_name']}",
+        f"Resource: {_format_dimensions(alarm_data['dimensions'])}",
+        f"",
+        f"Alarm Reason: {alarm_data['reason']}"
+    ]
+    
+    if alarm_data.get('threshold'):
+        description_parts.insert(6, f"Threshold: {alarm_data['threshold']}")
+    
+    description = "\n".join(description_parts)
     
     return {
         'eventType': 'incident',
@@ -98,7 +120,7 @@ def _build_payload(alarm_data: Dict[str, Any]) -> Dict[str, Any]:
         'action': 'created',
         'priority': alarm_data['priority'],
         'title': f"{alarm_data['service_name']} - {alarm_data['metric_name']} Alert",
-        'description': f"{alarm_data['reason']}{metrics_summary}",
+        'description': description,
         'timestamp': alarm_data['timestamp'],
         'service': alarm_data['service_name'],
         'data': {
@@ -111,12 +133,19 @@ def _build_payload(alarm_data: Dict[str, Any]) -> Dict[str, Any]:
                 'metric_name': alarm_data['metric_name'],
                 'namespace': alarm_data['namespace'],
                 'dimensions': alarm_data['dimensions'],
-                'threshold': alarm_data['threshold'],
+                'threshold': alarm_data.get('threshold'),
                 'state': alarm_data['state'],
                 'previous_state': alarm_data['previous_state']
             }
         }
     }
+
+
+def _format_dimensions(dimensions: Dict[str, str]) -> str:
+    """Format dimensions dict into readable string."""
+    if not dimensions:
+        return "N/A"
+    return ", ".join([f"{k}={v}" for k, v in dimensions.items()])
 
 
 def _generate_hmac_signature(payload: Dict[str, Any], timestamp: str, secret: str) -> str:

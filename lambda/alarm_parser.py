@@ -33,7 +33,7 @@ def parse_alarm_message(message: Dict[str, Any]) -> Dict[str, Any]:
     new_state = message.get('NewStateValue', 'UNKNOWN')
     old_state = message.get('OldStateValue', 'UNKNOWN')
     
-    return {
+    parsed_data = {
         'alarm_name': alarm_name,
         'alarm_arn': alarm_arn,
         'alarm_description': message.get('AlarmDescription', ''),
@@ -53,6 +53,10 @@ def parse_alarm_message(message: Dict[str, Any]) -> Dict[str, Any]:
         'period': trigger.get('Period', 300),
         'evaluation_periods': trigger.get('EvaluationPeriods', 1)
     }
+    
+    logger.info(f"Parsed alarm: {alarm_name} | {namespace}/{trigger.get('MetricName', 'N/A')} | {new_state}")
+    
+    return parsed_data
 
 
 def _extract_service_type(namespace: str, dimensions: Dict[str, str]) -> str:
