@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and fill in your values
+
+aws_region     = "us-west-2"
+project_name   = "devops-agent-webhook"
+
+# Get these from your DevOps Agent webhook configuration
+webhook_url    = "https://event-ai.us-east-1.api.aws/webhook/generic/YOUR_WEBHOOK_ID"
+webhook_secret = "YOUR_WEBHOOK_SECRET"
+
+# Set to true to automatically add SNS topic to existing alarms
+enable_alarm_updates = false
