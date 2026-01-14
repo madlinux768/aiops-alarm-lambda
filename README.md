@@ -41,20 +41,24 @@ terraform plan
 terraform apply
 ```
 
-3. **Add SNS topic to your alarms**:
-```bash
-# Get SNS topic ARN from outputs
-SNS_TOPIC=$(terraform output -raw sns_topic_arn)
+3. **Done!** EventBridge automatically captures all alarm state changes.
 
-# Update alarm with SNS action
-aws cloudwatch put-metric-alarm \
-  --alarm-name "YourAlarmName" \
-  --alarm-actions $SNS_TOPIC
-```
+### Important: Application Insights Compatibility
+
+If your alarms are managed by CloudWatch Application Insights (like the example alarms), Application Insights will periodically overwrite any manual changes to alarm actions. This solution uses **EventBridge** instead, which captures alarm state changes without modifying the alarms themselves.
 
 ## Configuration
 
-### Alarm Tags
+### EventBridge Integration (Recommended)
+
+The solution uses **EventBridge** to capture ALL CloudWatch alarm state changes automatically. This works perfectly with Application Insights-managed alarms since it doesn't require modifying the alarms themselves.
+
+**How it works:**
+- EventBridge rule catches any alarm transitioning to ALARM state
+- Lambda is triggered automatically
+- No need to modify individual alarms or add SNS actions
+
+### Alarm Tags (Optional)
 
 Tag your CloudWatch alarms to control behavior:
 
