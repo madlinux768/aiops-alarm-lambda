@@ -23,6 +23,10 @@ resource "aws_lambda_function" "webhook_handler" {
   tags = {
     Name = "${var.project_name}-handler"
   }
+
+  depends_on = [
+    aws_iam_role_policy.lambda
+  ]
 }
 
 # Lambda permission for SNS
@@ -54,7 +58,7 @@ resource "aws_sqs_queue" "dlq" {
 
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "lambda" {
-  name              = "/aws/lambda/${aws_lambda_function.webhook_handler.function_name}"
+  name              = "/aws/lambda/${var.project_name}-handler"
   retention_in_days = 7
 
   tags = {
