@@ -37,6 +37,20 @@ def send_webhook(alarm_data: Dict[str, Any]) -> Dict[str, Any]:
     
     logger.info(f"Webhook payload: title='{payload['title']}', priority={payload['priority']}")
     
+    # Log full payload for review/troubleshooting
+    logger.info(f"Full webhook payload: {json.dumps(payload, indent=2)}")
+    
+    # Check if dry-run mode is enabled
+    dry_run = os.environ.get('DRY_RUN', 'false').lower() == 'true'
+    
+    if dry_run:
+        logger.info("🔵 DRY-RUN MODE: Webhook NOT sent (would have called DevOps Agent)")
+        return {
+            'status_code': 200,
+            'body': json.dumps({'dry_run': True, 'message': 'Webhook not sent in dry-run mode'}),
+            'dry_run': True
+        }
+    
     # Generate HMAC signature
     timestamp = datetime.utcnow().isoformat() + 'Z'
     signature = _generate_hmac_signature(payload, timestamp, credentials['secret'])

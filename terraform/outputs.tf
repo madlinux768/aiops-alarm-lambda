@@ -27,24 +27,27 @@ output "instructions" {
   description = "Next steps"
   value       = <<-EOT
     
-    Deployment complete! Next steps:
+    Deployment complete! ${var.dry_run_mode ? "🔵 DRY-RUN MODE ENABLED" : "✓ Production mode"}
     
-    1. Add SNS topic to your CloudWatch alarms:
-       aws cloudwatch put-metric-alarm --alarm-name <ALARM_NAME> \
-         --alarm-actions ${aws_sns_topic.alarm_notifications.arn}
+    ${var.dry_run_mode ? "Webhook payloads will be logged but NOT sent to DevOps Agent.\nTo disable dry-run: set dry_run_mode=false and terraform apply\n" : ""}1. EventBridge automatically captures all alarm state changes
     
-    2. Tag alarms to enable webhook (optional):
+    2. Tag alarms to customize behavior (optional):
        aws cloudwatch tag-resource \
          --resource-arn <ALARM_ARN> \
          --tags Key=DevOpsAgentEnabled,Value=true \
                 Key=DevOpsAgentPriority,Value=HIGH \
                 Key=DevOpsAgentService,Value=YourService
     
-    3. Test with a sample alarm:
-       aws sns publish --topic-arn ${aws_sns_topic.alarm_notifications.arn} \
-         --message file://test-alarm.json
+    3. Test by triggering an alarm or use set-alarm-state:
+       aws cloudwatch set-alarm-state --alarm-name <ALARM_NAME> \
+         --state-value ALARM --state-reason "Test trigger"
     
     4. Monitor Lambda logs:
        aws logs tail ${aws_cloudwatch_log_group.lambda.name} --follow
+    
+    5. Query webhook payloads:
+       aws logs filter-log-events \
+         --log-group-name ${aws_cloudwatch_log_group.lambda.name} \
+         --filter-pattern "Full webhook payload"
   EOT
 }

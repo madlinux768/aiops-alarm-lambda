@@ -9,3 +9,10 @@ webhook_secret = "YOUR_WEBHOOK_SECRET"
 
 # Set to true to automatically add SNS topic to existing alarms
 enable_alarm_updates = false
+
+# Set to true to test without calling DevOps Agent (saves investigation quota)
+# Full payload will be logged to CloudWatch for review
+dry_run_mode = false
+
+# Set to true to enable dry-run mode (logs payloads without calling webhook)
+dry_run_mode = false

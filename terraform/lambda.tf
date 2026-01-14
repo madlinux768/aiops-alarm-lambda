@@ -13,6 +13,7 @@ resource "aws_lambda_function" "webhook_handler" {
     variables = {
       SECRET_ARN = aws_secretsmanager_secret.webhook_credentials.arn
       LOG_LEVEL  = "INFO"
+      DRY_RUN    = var.dry_run_mode ? "true" : "false"
     }
   }
 

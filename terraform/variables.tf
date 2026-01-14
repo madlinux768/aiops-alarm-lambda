@@ -27,3 +27,9 @@ variable "enable_alarm_updates" {
   type        = bool
   default     = false
 }
+
+variable "dry_run_mode" {
+  description = "Enable dry-run mode to test without calling DevOps Agent webhook (saves investigation quota)"
+  type        = bool
+  default     = false
+}
