@@ -1,0 +1,67 @@
+{
+  "version": "0",
+  "id": "test-event-001",
+  "detail-type": "CloudWatch Alarm State Change",
+  "source": "aws.cloudwatch",
+  "account": "173471018689",
+  "time": "2026-01-14T22:45:00Z",
+  "region": "us-west-2",
+  "resources": [
+    "arn:aws:cloudwatch:us-west-2:173471018689:alarm:ApplicationInsights/Gadget-Repository-Retail-Store/AWS/ApplicationELB/HTTPCode_Target_4XX_Count/app/retail-store-ecs-ui/1e7be60a593326ec/"
+  ],
+  "detail": {
+    "alarmName": "ApplicationInsights/Gadget-Repository-Retail-Store/AWS/ApplicationELB/HTTPCode_Target_4XX_Count/app/retail-store-ecs-ui/1e7be60a593326ec/",
+    "state": {
+      "value": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [1.0 (14/01/26 22:21:00)] was greater than or equal to the threshold (0.01).",
+      "reasonData": "{\"version\":\"1.0\",\"queryDate\":\"2026-01-14T22:21:00.000+0000\"}",
+      "timestamp": "2026-01-14T22:45:00Z"
+    },
+    "previousState": {
+      "value": "OK",
+      "reason": "Threshold Crossed",
+      "timestamp": "2026-01-14T22:00:00Z"
+    },
+    "configuration": {
+      "description": "This is math expression alarm created and managed by the CloudWatch Application Insights",
+      "metrics": [
+        {
+          "id": "m6",
+          "expression": "m6_HTTPCode_Target_4XX_Count/m6_RequestCount",
+          "label": "HTTPCode_Target_4XX_Count",
+          "returnData": true
+        },
+        {
+          "id": "m6_HTTPCode_Target_4XX_Count",
+          "metricStat": {
+            "metric": {
+              "namespace": "AWS/ApplicationELB",
+              "name": "HTTPCode_Target_4XX_Count",
+              "dimensions": {
+                "LoadBalancer": "app/retail-store-ecs-ui/1e7be60a593326ec"
+              }
+            },
+            "period": 300,
+            "stat": "Sum"
+          },
+          "returnData": false
+        },
+        {
+          "id": "m6_RequestCount",
+          "metricStat": {
+            "metric": {
+              "namespace": "AWS/ApplicationELB",
+              "name": "RequestCount",
+              "dimensions": {
+                "LoadBalancer": "app/retail-store-ecs-ui/1e7be60a593326ec"
+              }
+            },
+            "period": 300,
+            "stat": "Sum"
+          },
+          "returnData": false
+        }
+      ]
+    }
+  }
+}

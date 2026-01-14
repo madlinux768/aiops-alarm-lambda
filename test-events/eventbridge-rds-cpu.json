@@ -1,0 +1,46 @@
+{
+  "version": "0",
+  "id": "test-event-002",
+  "detail-type": "CloudWatch Alarm State Change",
+  "source": "aws.cloudwatch",
+  "account": "173471018689",
+  "time": "2026-01-14T23:00:00Z",
+  "region": "us-west-2",
+  "resources": [
+    "arn:aws:cloudwatch:us-west-2:173471018689:alarm:ApplicationInsights/Gadget-Repository-Retail-Store/AWS/RDS/CPUUtilization/retail-store-ecs-catalog/"
+  ],
+  "detail": {
+    "alarmName": "ApplicationInsights/Gadget-Repository-Retail-Store/AWS/RDS/CPUUtilization/retail-store-ecs-catalog/",
+    "state": {
+      "value": "ALARM",
+      "reason": "Threshold Crossed: 2 datapoints [95.2, 92.8] were greater than the threshold (90.0)",
+      "reasonData": "{\"version\":\"1.0\"}",
+      "timestamp": "2026-01-14T23:00:00Z"
+    },
+    "previousState": {
+      "value": "OK",
+      "reason": "Threshold Crossed",
+      "timestamp": "2026-01-14T22:50:00Z"
+    },
+    "configuration": {
+      "description": "RDS CPU utilization alarm",
+      "metrics": [
+        {
+          "id": "m1",
+          "metricStat": {
+            "metric": {
+              "namespace": "AWS/RDS",
+              "name": "CPUUtilization",
+              "dimensions": {
+                "DBClusterIdentifier": "retail-store-ecs-catalog"
+              }
+            },
+            "period": 300,
+            "stat": "Average"
+          },
+          "returnData": true
+        }
+      ]
+    }
+  }
+}
