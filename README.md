@@ -1,6 +1,6 @@
 # CloudWatch Alarm to AWS DevOps Agent Integration
 
-**Reference pattern** for automatically creating AWS DevOps Agent investigations from CloudWatch alarms using EventBridge, Lambda, and Terraform.
+**Reference pattern** for automatically creating AWS DevOps Agent investigations from CloudWatch alarms using EventBridge, Lambda, and CDK/Terraform.
 
 ## Overview
 
@@ -14,7 +14,7 @@ This pattern enables automatic incident investigation by triggering AWS DevOps A
 - **Tag-based configuration** - Customize per-alarm behavior
 - **Dry-run mode** - Test without consuming investigation quota
 - **Comprehensive logging** - Full audit trail with payloads
-- **Pure Terraform** - Single IaC tool for entire stack
+- **Dual deployment options** - CDK (Python) or Terraform
 
 ## Architecture
 
@@ -26,22 +26,7 @@ See [Architecture Documentation](docs/ARCHITECTURE.md) for detailed diagrams and
 
 ## Quick Start
 
-### Option 1: Terraform (Recommended)
-
-1. **Configure deployment**:
-```bash
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-# Edit with your webhook credentials and deployment context
-```
-
-2. **Deploy**:
-```bash
-terraform init
-terraform apply
-```
-
-### Option 2: AWS CDK (Python)
+### Option 1: AWS CDK (Python)
 
 1. **Setup**:
 ```bash
@@ -60,6 +45,21 @@ cdk deploy
 
 See [CDK README](cdk/README.md) for detailed CDK instructions.
 
+### Option 2: Terraform
+
+1. **Configure deployment**:
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edit with your webhook credentials and deployment context
+```
+
+2. **Deploy**:
+```bash
+terraform init
+terraform apply
+```
+
 ---
 
 **Done!** All alarms automatically trigger investigations when entering ALARM state.
@@ -70,8 +70,18 @@ See [Deployment Guide](docs/DEPLOYMENT.md) for detailed scenarios and [Customiza
 
 ### Deployment Context
 
-Provide context about your deployment in `terraform.tfvars`:
+Provide context about your deployment:
 
+**CDK (cdk.context.json)**:
+```json
+{
+  "deployment_name": "production-api",
+  "deployment_description": "Production API with ECS, RDS, and DynamoDB",
+  "default_priority": "MEDIUM"
+}
+```
+
+**Terraform (terraform.tfvars)**:
 ```hcl
 deployment_name        = "production-api"
 deployment_description = "Production API with ECS, RDS, and DynamoDB"
@@ -108,8 +118,15 @@ Default priority rules (customizable):
 
 Test without creating investigations:
 
+**CDK**:
+```json
+{
+  "dry_run_mode": true
+}
+```
+
+**Terraform**:
 ```hcl
-# terraform.tfvars
 dry_run_mode = true
 ```
 
@@ -141,7 +158,12 @@ aws logs filter-log-events \
 ## Project Structure
 
 ```
-├── terraform/              # Terraform deployment (Option 1)
+├── cdk/                   # CDK Python deployment (Option 1)
+│   ├── app.py             # CDK app entry point
+│   ├── stacks/            # CDK stack definitions
+│   ├── cdk.json           # CDK configuration
+│   └── README.md          # CDK-specific instructions
+├── terraform/              # Terraform deployment (Option 2)
 │   ├── main.tf            # Provider and data sources
 │   ├── lambda.tf          # Lambda function and DLQ
 │   ├── eventbridge.tf     # EventBridge rule for alarm capture
@@ -150,10 +172,6 @@ aws logs filter-log-events \
 │   ├── secrets.tf         # Secrets Manager for webhook credentials
 │   ├── variables.tf       # Input variables
 │   └── outputs.tf         # Stack outputs
-├── cdk/                   # CDK Python deployment (Option 2)
-│   ├── app.py             # CDK app entry point
-│   ├── stacks/            # CDK stack definitions
-│   └── README.md          # CDK-specific instructions
 ├── lambda/                # Lambda function code (shared)
 │   ├── handler.py         # Main handler (SNS/EventBridge routing)
 │   ├── webhook_client.py  # HMAC webhook client
