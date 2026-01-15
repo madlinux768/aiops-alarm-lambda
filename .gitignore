@@ -6,6 +6,12 @@
 !*.tfvars.example
 .terraform.lock.hcl
 
+# CDK
+cdk.out/
+cdk.context.json
+.cdk.staging/
+*.egg-info/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -13,7 +19,9 @@ __pycache__/
 *.so
 .Python
 venv/
+.venv/
 ENV/
+env/
 
 # Lambda package
 lambda.zip

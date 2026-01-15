@@ -1,0 +1,10 @@
+{
+  "deployment_name": "my-production-deployment",
+  "deployment_description": "Production deployment with ECS, RDS, and DynamoDB",
+  "default_priority": "MEDIUM",
+  "dry_run_mode": false,
+  "webhook_url": "https://event-ai.us-east-1.api.aws/webhook/generic/YOUR_WEBHOOK_ID",
+  "webhook_secret": "YOUR_WEBHOOK_SECRET",
+  "region": "us-west-2",
+  "account": "123456789012"
+}

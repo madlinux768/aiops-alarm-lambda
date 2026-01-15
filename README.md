@@ -26,6 +26,8 @@ See [Architecture Documentation](docs/ARCHITECTURE.md) for detailed diagrams and
 
 ## Quick Start
 
+### Option 1: Terraform (Recommended)
+
 1. **Configure deployment**:
 ```bash
 cd terraform
@@ -39,7 +41,28 @@ terraform init
 terraform apply
 ```
 
-3. **Done!** All alarms automatically trigger investigations when entering ALARM state.
+### Option 2: AWS CDK (Python)
+
+1. **Setup**:
+```bash
+cd cdk
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp cdk.context.json.example cdk.context.json
+# Edit cdk.context.json with your values
+```
+
+2. **Deploy**:
+```bash
+cdk bootstrap  # First time only
+cdk deploy
+```
+
+See [CDK README](cdk/README.md) for detailed CDK instructions.
+
+---
+
+**Done!** All alarms automatically trigger investigations when entering ALARM state.
 
 See [Deployment Guide](docs/DEPLOYMENT.md) for detailed scenarios and [Customization Guide](docs/CUSTOMIZATION.md) for advanced configuration.
 
@@ -118,7 +141,7 @@ aws logs filter-log-events \
 ## Project Structure
 
 ```
-├── terraform/              # Infrastructure as Code
+├── terraform/              # Terraform deployment (Option 1)
 │   ├── main.tf            # Provider and data sources
 │   ├── lambda.tf          # Lambda function and DLQ
 │   ├── eventbridge.tf     # EventBridge rule for alarm capture
@@ -127,7 +150,11 @@ aws logs filter-log-events \
 │   ├── secrets.tf         # Secrets Manager for webhook credentials
 │   ├── variables.tf       # Input variables
 │   └── outputs.tf         # Stack outputs
-├── lambda/                # Lambda function code
+├── cdk/                   # CDK Python deployment (Option 2)
+│   ├── app.py             # CDK app entry point
+│   ├── stacks/            # CDK stack definitions
+│   └── README.md          # CDK-specific instructions
+├── lambda/                # Lambda function code (shared)
 │   ├── handler.py         # Main handler (SNS/EventBridge routing)
 │   ├── webhook_client.py  # HMAC webhook client
 │   ├── context_enricher.py # Tag lookup and priority mapping
