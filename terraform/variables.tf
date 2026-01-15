@@ -22,6 +22,28 @@ variable "project_name" {
   default     = "devops-agent-webhook"
 }
 
+variable "deployment_name" {
+  description = "Deployment name to include in webhook context (e.g., 'retail-store-ecs-mi', 'production-api')"
+  type        = string
+  default     = ""
+}
+
+variable "deployment_description" {
+  description = "Optional description of the deployment for webhook context"
+  type        = string
+  default     = ""
+}
+
+variable "default_priority" {
+  description = "Default priority for investigations when not specified by tags or rules (HIGH, MEDIUM, LOW)"
+  type        = string
+  default     = "MEDIUM"
+  validation {
+    condition     = contains(["HIGH", "MEDIUM", "LOW"], var.default_priority)
+    error_message = "Priority must be HIGH, MEDIUM, or LOW"
+  }
+}
+
 variable "enable_alarm_updates" {
   description = "Whether to update existing CloudWatch alarms with SNS topic"
   type        = bool

@@ -111,20 +111,39 @@ def _get_webhook_credentials() -> Dict[str, str]:
 def _build_payload(alarm_data: Dict[str, Any]) -> Dict[str, Any]:
     """Build DevOps Agent webhook payload with essential context."""
     
+    # Get deployment context from environment
+    deployment_name = os.environ.get('DEPLOYMENT_NAME', '')
+    deployment_desc = os.environ.get('DEPLOYMENT_DESCRIPTION', '')
+    
     # Build comprehensive description with all context
-    description_parts = [
+    description_parts = []
+    
+    # Add deployment context if provided
+    if deployment_name:
+        description_parts.append(f"Deployment: {deployment_name}")
+    if deployment_desc:
+        description_parts.append(deployment_desc)
+    if deployment_name or deployment_desc:
+        description_parts.append("")
+    
+    # Add alarm details
+    description_parts.extend([
         f"CloudWatch Alarm: {alarm_data['alarm_name']}",
         f"AWS Account: {alarm_data['account_id']}",
         f"Region: {alarm_data['region']}",
         f"",
+        f"Service Type: {alarm_data['service_type']}",
         f"Metric: {alarm_data['namespace']}/{alarm_data['metric_name']}",
         f"Resource: {_format_dimensions(alarm_data['dimensions'])}",
-        f"",
-        f"Alarm Reason: {alarm_data['reason']}"
-    ]
+    ])
     
     if alarm_data.get('threshold'):
-        description_parts.insert(6, f"Threshold: {alarm_data['threshold']}")
+        description_parts.append(f"Threshold: {alarm_data['threshold']}")
+    
+    description_parts.extend([
+        f"",
+        f"Details: {alarm_data['reason']}"
+    ])
     
     description = "\n".join(description_parts)
     

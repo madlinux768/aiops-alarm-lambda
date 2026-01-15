@@ -11,9 +11,12 @@ resource "aws_lambda_function" "webhook_handler" {
 
   environment {
     variables = {
-      SECRET_ARN = aws_secretsmanager_secret.webhook_credentials.arn
-      LOG_LEVEL  = "INFO"
-      DRY_RUN    = var.dry_run_mode ? "true" : "false"
+      SECRET_ARN             = aws_secretsmanager_secret.webhook_credentials.arn
+      LOG_LEVEL              = "INFO"
+      DRY_RUN                = var.dry_run_mode ? "true" : "false"
+      DEPLOYMENT_NAME        = var.deployment_name
+      DEPLOYMENT_DESCRIPTION = var.deployment_description
+      DEFAULT_PRIORITY       = var.default_priority
     }
   }
 

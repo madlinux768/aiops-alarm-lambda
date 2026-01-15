@@ -1,5 +1,6 @@
 """Enrich alarm context with CloudWatch metrics and resource tags."""
 import logging
+import os
 import boto3
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
@@ -63,15 +64,20 @@ def _get_recent_metrics(alarm_data: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def _default_priority(alarm_data: Dict[str, Any]) -> str:
     """Determine default priority based on alarm characteristics."""
-    metric = alarm_data['metric_name']
-    namespace = alarm_data['namespace']
+    # Check for environment variable override
+    default_priority = os.environ.get('DEFAULT_PRIORITY', 'MEDIUM')
     
-    # HIGH priority conditions
+    metric = alarm_data.get('metric_name', '')
+    namespace = alarm_data.get('namespace', '')
+    
+    # HIGH priority conditions (common critical scenarios)
     if namespace == 'AWS/RDS' and 'CPU' in metric:
         return 'HIGH'
     elif namespace == 'AWS/DynamoDB' and 'SystemErrors' in metric:
         return 'HIGH'
     elif namespace == 'AWS/ApplicationELB' and '4XX' in metric:
+        return 'HIGH'
+    elif namespace == 'AWS/Lambda' and 'Errors' in metric:
         return 'HIGH'
     
     # MEDIUM priority conditions
@@ -79,9 +85,11 @@ def _default_priority(alarm_data: Dict[str, Any]) -> str:
         return 'MEDIUM'
     elif namespace == 'AWS/NATGateway':
         return 'MEDIUM'
+    elif namespace == 'AWS/ApplicationELB' and '5XX' in metric:
+        return 'MEDIUM'
     
-    # Default to LOW
-    return 'LOW'
+    # Use configured default for everything else
+    return default_priority
 
 
 def _extract_service_name(alarm_data: Dict[str, Any]) -> str:

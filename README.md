@@ -1,127 +1,165 @@
-# DevOps Agent Webhook Integration
+# CloudWatch Alarm to AWS DevOps Agent Integration
 
-Automated CloudWatch Alarm to AWS DevOps Agent Investigation pattern using pure Terraform.
+**Reference pattern** for automatically creating AWS DevOps Agent investigations from CloudWatch alarms using EventBridge, Lambda, and Terraform.
+
+## Overview
+
+This pattern enables automatic incident investigation by triggering AWS DevOps Agent webhooks when CloudWatch alarms enter ALARM state. Works with any CloudWatch alarm including those managed by Application Insights.
+
+## Features
+
+- **Zero alarm modification** - EventBridge captures all alarm state changes
+- **Application Insights compatible** - Works with managed alarms
+- **HMAC v1 authentication** - Production-ready security
+- **Tag-based configuration** - Customize per-alarm behavior
+- **Dry-run mode** - Test without consuming investigation quota
+- **Comprehensive logging** - Full audit trail with payloads
+- **Pure Terraform** - Single IaC tool for entire stack
 
 ## Architecture
 
 ```
-CloudWatch Alarms → SNS Topic → Lambda Function → DevOps Agent Webhook → Investigation
+CloudWatch Alarms → EventBridge → Lambda → DevOps Agent Webhook → Investigation
 ```
 
-## Features
-
-- **HMAC v1 Authentication**: Secure webhook calls with timestamp-based signatures
-- **Context Enrichment**: Automatically gathers CloudWatch metrics and resource tags
-- **Tag-Based Configuration**: Control behavior via alarm tags
-- **Dead Letter Queue**: Failed invocations captured for replay
-- **Pure Terraform**: Single IaC tool for entire stack
+See [Architecture Documentation](docs/ARCHITECTURE.md) for detailed diagrams and component descriptions.
 
 ## Quick Start
 
-### Prerequisites
-
-- AWS CLI configured
-- Terraform >= 1.0
-- Python 3.13 (for Lambda runtime)
-- DevOps Agent webhook URL and secret
-
-### Deploy
-
-1. **Configure variables**:
+1. **Configure deployment**:
 ```bash
 cd terraform
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your webhook credentials
+# Edit with your webhook credentials and deployment context
 ```
 
-2. **Deploy infrastructure**:
+2. **Deploy**:
 ```bash
 terraform init
-terraform plan
 terraform apply
 ```
 
-3. **Done!** EventBridge automatically captures all alarm state changes.
+3. **Done!** All alarms automatically trigger investigations when entering ALARM state.
 
-### Important: Application Insights Compatibility
-
-If your alarms are managed by CloudWatch Application Insights (like the example alarms), Application Insights will periodically overwrite any manual changes to alarm actions. This solution uses **EventBridge** instead, which captures alarm state changes without modifying the alarms themselves.
+See [Deployment Guide](docs/DEPLOYMENT.md) for detailed scenarios and [Customization Guide](docs/CUSTOMIZATION.md) for advanced configuration.
 
 ## Configuration
 
-### EventBridge Integration (Recommended)
+### Deployment Context
 
-The solution uses **EventBridge** to capture ALL CloudWatch alarm state changes automatically. This works perfectly with Application Insights-managed alarms since it doesn't require modifying the alarms themselves.
+Provide context about your deployment in `terraform.tfvars`:
 
-**How it works:**
-- EventBridge rule catches any alarm transitioning to ALARM state
-- Lambda is triggered automatically
-- No need to modify individual alarms or add SNS actions
+```hcl
+deployment_name        = "production-api"
+deployment_description = "Production API with ECS, RDS, and DynamoDB"
+default_priority       = "MEDIUM"
+```
 
-### Alarm Tags (Optional)
+### Per-Alarm Customization
 
-Tag your CloudWatch alarms to control behavior:
+Tag alarms to control behavior:
 
-- `DevOpsAgentEnabled`: "true" (enable webhook for this alarm)
-- `DevOpsAgentPriority`: "HIGH|MEDIUM|LOW" (override default priority)
-- `DevOpsAgentService`: "ServiceName" (custom service name for investigation)
-
-Example:
 ```bash
 aws cloudwatch tag-resource \
-  --resource-arn arn:aws:cloudwatch:us-west-2:123456789012:alarm:MyAlarm \
+  --resource-arn <ALARM_ARN> \
   --tags Key=DevOpsAgentEnabled,Value=true \
          Key=DevOpsAgentPriority,Value=HIGH \
-         Key=DevOpsAgentService,Value=RetailStore-API
+         Key=DevOpsAgentService,Value=PaymentService
 ```
+
+**Available Tags:**
+- `DevOpsAgentEnabled`: "true|false" - Enable/disable webhook for this alarm
+- `DevOpsAgentPriority`: "HIGH|MEDIUM|LOW" - Override default priority
+- `DevOpsAgentService`: "ServiceName" - Custom service name for investigation
 
 ### Priority Mapping
 
-Default priority based on alarm type:
-- **HIGH**: RDS CPU >90%, DynamoDB SystemErrors, ALB 4XX >70%
-- **MEDIUM**: ECS CPU/Memory >90%, NAT Gateway errors
-- **LOW**: Capacity warnings
+Default priority rules (customizable):
+- **HIGH**: RDS CPU, DynamoDB SystemErrors, ALB 4XX, Lambda Errors
+- **MEDIUM**: ECS CPU/Memory, ALB 5XX, NAT Gateway errors
+- **LOW/DEFAULT**: Everything else
 
 ## Testing
 
-Test the Lambda function:
-```bash
-# Trigger a test alarm
-aws sns publish \
-  --topic-arn $(terraform output -raw sns_topic_arn) \
-  --message file://test-alarm.json
+### Dry-Run Mode
 
-# Monitor logs
-aws logs tail $(terraform output -raw lambda_log_group) --follow
+Test without creating investigations:
+
+```hcl
+# terraform.tfvars
+dry_run_mode = true
 ```
+
+### Test Events
+
+Use sample events without triggering alarms:
+
+```bash
+aws lambda invoke \
+  --function-name devops-agent-webhook-handler \
+  --payload file://test-events/eventbridge-alb-4xx.json \
+  /tmp/response.json
+```
+
+### Review Payloads
+
+```bash
+aws logs filter-log-events \
+  --log-group-name /aws/lambda/devops-agent-webhook-handler \
+  --filter-pattern "Full webhook payload"
+```
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Detailed architecture and data flow
+- [Deployment Guide](docs/DEPLOYMENT.md) - Step-by-step deployment for different scenarios
+- [Customization Guide](docs/CUSTOMIZATION.md) - Customize for your alarm types and priorities
 
 ## Project Structure
 
 ```
-├── terraform/
-│   ├── main.tf              # Provider and data sources
-│   ├── lambda.tf            # Lambda function and DLQ
-│   ├── sns.tf               # SNS topic and encryption
-│   ├── iam.tf               # IAM roles and policies
-│   ├── secrets.tf           # Secrets Manager
-│   ├── variables.tf         # Input variables
-│   ├── outputs.tf           # Stack outputs
-│   └── backend.tf           # Remote state config
-├── lambda/
-│   ├── handler.py           # Main Lambda handler
-│   ├── webhook_client.py    # HMAC webhook client
-│   ├── context_enricher.py  # Metrics and tags enrichment
-│   ├── alarm_parser.py      # SNS message parser
-│   └── requirements.txt     # Python dependencies
+├── terraform/              # Infrastructure as Code
+│   ├── main.tf            # Provider and data sources
+│   ├── lambda.tf          # Lambda function and DLQ
+│   ├── eventbridge.tf     # EventBridge rule for alarm capture
+│   ├── sns.tf             # SNS topic (optional integration)
+│   ├── iam.tf             # IAM roles and policies
+│   ├── secrets.tf         # Secrets Manager for webhook credentials
+│   ├── variables.tf       # Input variables
+│   └── outputs.tf         # Stack outputs
+├── lambda/                # Lambda function code
+│   ├── handler.py         # Main handler (SNS/EventBridge routing)
+│   ├── webhook_client.py  # HMAC webhook client
+│   ├── context_enricher.py # Tag lookup and priority mapping
+│   └── alarm_parser.py    # Alarm message parser
+├── test-events/           # Sample EventBridge events for testing
+├── docs/                  # Documentation
 └── README.md
 ```
 
-## Cleanup
+## Use Cases
 
-```bash
-cd terraform
-terraform destroy
-```
+- **Multi-service deployments** - ECS, Lambda, RDS, DynamoDB alarms
+- **Application Insights** - Works with managed alarms
+- **Multi-region** - Deploy in each region
+- **Existing SNS topics** - Integrate with current alarm actions
+- **Custom metrics** - Support any CloudWatch namespace
+
+## Requirements
+
+- AWS CLI configured
+- Terraform >= 1.0
+- Python 3.13 (Lambda runtime)
+- DevOps Agent webhook URL and secret
+- CloudWatch alarms in your account
+
+## Cost
+
+Typical monthly cost: **<$1**
+- Lambda: ~$0.20 (assuming 1000 invocations/month)
+- EventBridge: Free (included)
+- Secrets Manager: $0.40/secret/month
+- CloudWatch Logs: ~$0.50 (7-day retention)
 
 ## License
 

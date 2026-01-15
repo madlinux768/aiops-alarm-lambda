@@ -1,0 +1,52 @@
+{
+  "priority_rules": [
+    {
+      "name": "RDS CPU Critical",
+      "priority": "HIGH",
+      "conditions": {
+        "namespace": "AWS/RDS",
+        "metric_pattern": "CPU"
+      }
+    },
+    {
+      "name": "DynamoDB System Errors",
+      "priority": "HIGH",
+      "conditions": {
+        "namespace": "AWS/DynamoDB",
+        "metric_pattern": "SystemErrors"
+      }
+    },
+    {
+      "name": "ALB 4XX Errors",
+      "priority": "HIGH",
+      "conditions": {
+        "namespace": "AWS/ApplicationELB",
+        "metric_pattern": "4XX"
+      }
+    },
+    {
+      "name": "ECS CPU/Memory",
+      "priority": "MEDIUM",
+      "conditions": {
+        "namespace": "AWS/ECS",
+        "metric_pattern": "(CPU|Memory)"
+      }
+    },
+    {
+      "name": "ECS Container Insights",
+      "priority": "MEDIUM",
+      "conditions": {
+        "namespace": "ECS/ContainerInsights",
+        "metric_pattern": "(Cpu|Memory)"
+      }
+    },
+    {
+      "name": "NAT Gateway Errors",
+      "priority": "MEDIUM",
+      "conditions": {
+        "namespace": "AWS/NATGateway"
+      }
+    }
+  ],
+  "default_priority": "LOW"
+}

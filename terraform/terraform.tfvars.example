@@ -3,6 +3,13 @@
 aws_region     = "us-west-2"
 project_name   = "devops-agent-webhook"
 
+# Your deployment context (helps DevOps Agent understand what it's investigating)
+deployment_name        = "my-production-deployment"
+deployment_description = "Production ECS deployment with microservices, RDS, and DynamoDB"
+
+# Default priority for alarms (can be overridden per-alarm with tags)
+default_priority = "MEDIUM"
+
 # Get these from your DevOps Agent webhook configuration
 webhook_url    = "https://event-ai.us-east-1.api.aws/webhook/generic/YOUR_WEBHOOK_ID"
 webhook_secret = "YOUR_WEBHOOK_SECRET"
